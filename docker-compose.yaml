@@ -1,0 +1,19 @@
+version: "3"
+
+services:
+  inv-man:
+    image: inv-man
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    container_name: inv-man
+    ports:
+      - 8888:8888
+    volumes:
+      - ./:/app/
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [ gpu ]
+    command: /bin/bash -c "sleep 10d"
