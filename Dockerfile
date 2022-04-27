@@ -34,6 +34,6 @@ RUN echo 'import Pkg; Pkg.activate("InvestmentManagement")' >> ./julia-${JUL_VER
 
 WORKDIR app/
 COPY InvestmentManagement/* InvestmentManagement/
-ENV ALPHA_VANTAGE_API_KEY=""
+ENV ALPHA_VANTAGE_API_KEY="INSERT_KEY_HERE"
 RUN julia -e 'Pkg.instantiate()'
 RUN julia -e 'Pkg.precompile()'
