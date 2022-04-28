@@ -9,7 +9,6 @@ using StatsBase
 using Random
 using Distributions
 using DataFrames
-using Suppressor
 import CSV
 function get_relevant_yields(file_path_treas, file_path_corp, durations, cleaned_rets)
     # fix this to apply all preprocessing inside function
