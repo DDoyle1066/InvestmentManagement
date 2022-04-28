@@ -68,21 +68,22 @@ end
 function gen_forecast_eff_front(num_sims, file_path_treas, file_path_corp)
     all_eff_frontiers = Vector{DataFrame}(undef, num_sims)
     iter = ProgressBar(1:num_sims)
+    cleaned_rets = CleanData.clean_data(1)
+    yields = ScenGen.get_relevant_yields(file_path_treas, file_path_corp, float.(1:60) / 2, cleaned_rets)
+    yields_pca, yields_cont, yields_components, bond_returns, start_durations, end_durations = ScenGen.get_yields_info(yields)
+    # can get warning for having too few data points. This can probably be helped by having some sparse covariance matrix and warrants further investigation
+    all_final_regressions, all_krd_indices, p₂₁, p₁₂, return_gmm, all_tickers, starting_state = ScenGen.get_etf_generator(cleaned_rets, bond_returns)
+    starting_yield = yields_cont[1, :]
+    start_date = yields.Date[1]
+    num_time_steps = 15 * 12
     Threads.@threads for i in iter
-        cleaned_rets = CleanData.clean_data(i)
-        yields = ScenGen.get_relevant_yields(file_path_treas, file_path_corp, float.(1:60) / 2, cleaned_rets)
-        yields_pca, yields_cont, yields_components, bond_returns = ScenGen.get_yields_info(yields)
-        # can get warning for having too few data points. This can probably be helped by having some sparse covariance matrix and warrants further investigation
-        all_final_regressions, all_krd_indices, p₂₁, p₁₂, return_gmm, all_tickers, starting_state, start_durations, end_durations = ScenGen.get_etf_generator(cleaned_rets, bond_returns)
-        starting_yield = yields_cont[1, :]
-        start_date = yields.Date[1]
-        num_time_steps = 15 * 12
         all_rets = ScenGen.forecast_fund_returns(num_time_steps, i, starting_yield,
             yields_components, yields_pca, start_durations, end_durations,
             all_final_regressions, all_krd_indices, p₂₁, p₁₂, starting_state,
             return_gmm, start_date, all_tickers)
         all_eff_frontiers[i] = generate_eff_frontier(i, all_rets, sample_returns=false)
     end
+    return vcat(all_eff_frontiers...)
 end
 function consolidate_frontier_scens(constr_eff_front)
     return combine(groupby(constr_eff_front, :risk_level),

@@ -98,9 +98,7 @@ function get_etf_generator(cleaned_rets, bond_returns)
     end
     return_residuals = hcat(all_residuals...)
     return_gmm = GMM(2, return_residuals, kind=:full, method=:split)
-    # @suppress begin
     em!(return_gmm, return_residuals, nIter=10, varfloor=1e-12)
-    # end
     state_weights = gmmposterior(return_gmm, return_residuals)[1]
     states = [argmax(state_weights[i, :]) for i in 1:size(state_weights)[1]]
     p₁₂ = sum((states[2:end] .== 1) .& (states[1:(end-1)] .== 2)) / sum((states[2:end] .== 1))

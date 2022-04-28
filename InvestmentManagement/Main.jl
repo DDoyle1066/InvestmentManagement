@@ -18,15 +18,22 @@ if !isfile("data/raw/full_etf_prices.csv") | !isfile("data/raw/full_yields.csv")
 end
 #### Constrained optimization approach
 constr_eff_front_file_path = "data/model_results/constr_opt_eff_front.csv"
+constr_eff_front_forecast_file_path = "data/model_results/constr_opt_eff_front_forecast.csv"
 if !isfile(constr_eff_front_file_path)
-    @time constr_eff_front = ConstrOpt.generate_all_eff_frontiers(1000)
+    constr_eff_front = ConstrOpt.generate_all_eff_frontiers(1000)
     CSV.write(constr_eff_front_file_path, constr_eff_front)
 else
     constr_eff_front = CSV.read(constr_eff_front_file_path, DataFrame)
 end
+if !isfile(constr_eff_front_forecast_file_path)
+    constr_eff_front_forecast = ConstrOpt.gen_forecast_eff_front(1000, file_path_treas, file_path_corp)
+    CSV.write(constr_eff_front_forecast_file_path, constr_eff_front_forecast)
+else
+    constr_eff_front_forecast = CSV.read(constr_eff_front_forecast_file_path, DataFrame)
+end
 constr_eff_front_forecast = ConstrOpt.gen_forecast_eff_front(10, file_path_treas, file_path_corp)
-constr_eff_front_agg = ConstrOpt.consolidate_frontier_scens(constr_eff_front)
-CSV.write(constr_eff_front_file_path, constr_eff_front)
+constr_eff_front_agg = ConstrOpt.consolidate_frontier_scens(constr_eff_front_forecast)
+CSV.write(constr_eff_front_file_path, constr_eff_front_forecast)
 ConstrOpt.plot_eff_front(constr_eff_front_agg)
 ConstrOpt.plot_allocations(constr_eff_front_agg)
 ConstrOpt.see_allocations_at_risk_level(constr_eff_front_agg, 5)
