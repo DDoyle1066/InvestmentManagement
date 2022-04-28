@@ -11,11 +11,13 @@ corp_urls = ["https://home.treasury.gov/system/files/226/hqmeom_04_08.xls",
     "https://home.treasury.gov/system/files/226/hqmeom_09_13.xls",
     "https://home.treasury.gov/system/files/226/hqmeom_14_18.xls",
     "https://home.treasury.gov/system/files/226/hqmeom_19_23.xls"]
-@info "Loading raw market data"
+@info "Loading treasury data"
 file_path_treas = LoadData.load_yield_curves(treas_urls, "UST", "data/raw/full_yields_treasury.csv")
 file_path_corp = LoadData.load_yield_curves(corp_urls, "HQM", "data/raw/full_yields_corp.csv")
-if !isfile("data/raw/full_etf_prices.csv") | !isfile("data/raw/full_yields.csv")
-    LoadData.load_etfs()
+etf_path = "data/raw/full_etf_prices.csv"
+if !isfile(etf_path)
+    @info "Loading ETF data from AlphaVantage. Note: this is slow for free keys since downloads are limited to 5 requests per minute"
+    LoadData.load_etfs(etf_path)
 end
 #### Constrained optimization approach
 constr_eff_front_file_path = "data/model_results/constr_opt_eff_front.csv"
