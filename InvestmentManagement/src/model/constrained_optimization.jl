@@ -7,6 +7,7 @@ using ProgressBars
 using DataFrames
 using Plots
 include("../data/clean_data.jl")
+include("scenario_generator.jl")
 function generate_eff_frontier(scen_id, all_rets; sample_returns=true)
     if sample_returns
         sampled_indices = sample(MersenneTwister(scen_id), 1:nrow(all_rets), nrow(all_rets))
@@ -60,17 +61,34 @@ function generate_all_eff_frontiers(num_sims)
     Threads.@threads for i in iter
         all_rets = CleanData.clean_data(i)
         all_eff_frontiers[i] = generate_eff_frontier(i, all_rets)
+
     end
     return vcat(all_eff_frontiers...)
+end
+function gen_forecast_eff_front(num_sims, file_path_treas, file_path_corp)
+    all_eff_frontiers = Vector{DataFrame}(undef, num_sims)
+    iter = ProgressBar(1:num_sims)
+    Threads.@threads for i in iter
+        cleaned_rets = CleanData.clean_data(i)
+        yields = ScenGen.get_relevant_yields(file_path_treas, file_path_corp, float.(1:60) / 2, cleaned_rets)
+        yields_pca, yields_cont, yields_components, bond_returns = ScenGen.get_yields_info(yields)
+        # can get warning for having too few data points. This can probably be helped by having some sparse covariance matrix and warrants further investigation
+        all_final_regressions, all_krd_indices, p₂₁, p₁₂, return_gmm, all_tickers, starting_state, start_durations, end_durations = ScenGen.get_etf_generator(cleaned_rets, bond_returns)
+        starting_yield = yields_cont[1, :]
+        start_date = yields.Date[1]
+        num_time_steps = 15 * 12
+        all_rets = ScenGen.forecast_fund_returns(num_time_steps, i, starting_yield,
+            yields_components, yields_pca, start_durations, end_durations,
+            all_final_regressions, all_krd_indices, p₂₁, p₁₂, starting_state,
+            return_gmm, start_date, all_tickers)
+        all_eff_frontiers[i] = generate_eff_frontier(i, all_rets, sample_returns=false)
+    end
 end
 function consolidate_frontier_scens(constr_eff_front)
     return combine(groupby(constr_eff_front, :risk_level),
         names(constr_eff_front) .=> mean .=> names(constr_eff_front)
     )[:, Not(:scen_id)]
 end
-# consol_eff_frontier = combine(groupby(consol_eff_frontier, :risk_level),
-#     names(consol_eff_frontier) .=> mean .=> names(consol_eff_frontier)
-# )[:, Not(:scen_id)]
 function plot_eff_front(constr_eff_front_agg)
     return plot(constr_eff_front_agg.sd, constr_eff_front_agg.mean)
 end
@@ -87,13 +105,4 @@ function see_allocations_at_risk_level(constr_eff_front_agg, risk_ind)
     transform!(risk_df, :allocation => (x -> round.(x / sum(x), digits=4)) => :allocation_adjusted)
     return risk_df, risk_ret
 end
-# heatmap(Matrix(consol_eff_frontier[:, Not([:mean, :sd, :risk_level])]))
-# # function view_at_risk_level 
-# risk_ind = 22
-# risk_df = filter(:risk_level => ==(risk_ind), consol_eff_frontier)[:, Not([:risk_level, :mean, :sd])]
-# risk_df = stack(risk_df, variable_name=:ticker, value_name=:allocation)
-# sort!(risk_df, order(:allocation, rev=true))
-# risk_df.cum_alloc = cumsum(risk_df.allocation)
-# risk_df = risk_df[risk_df.allocation.>=0.01, :]
-# transform!(risk_df, :allocation => (x -> round.(x / sum(x), digits=4)) => :allocation_adjusted)
 end
