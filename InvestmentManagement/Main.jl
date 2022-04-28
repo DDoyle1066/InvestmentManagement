@@ -2,6 +2,17 @@ import CSV
 using DataFrames
 include("src/data/load_data.jl")
 include("src/model/constrained_optimization.jl")
+treas_urls = ["https://home.treasury.gov/system/files/226/tnceom_03_07.xls",
+    "https://home.treasury.gov/system/files/226/tnceom_08_12.xls",
+    "https://home.treasury.gov/system/files/226/tnceom_13_17.xls",
+    "https://home.treasury.gov/system/files/226/tnceom_18_22.xls"]
+corp_urls = ["https://home.treasury.gov/system/files/226/hqmeom_04_08.xls",
+    "https://home.treasury.gov/system/files/226/hqmeom_09_13.xls",
+    "https://home.treasury.gov/system/files/226/hqmeom_14_18.xls",
+    "https://home.treasury.gov/system/files/226/hqmeom_19_23.xls"]
+
+file_path_treas = LoadData.load_yield_curves(treas_urls, "UST", "data/raw/full_yields_treasury.csv")
+file_path_corp = LoadData.load_yield_curves(corp_urls, "HQM", "data/raw/full_yields_corp.csv")
 if !isfile("data/raw/full_etf_prices.csv") | !isfile("data/raw/full_yields.csv")
     LoadData.load_data()
 end
