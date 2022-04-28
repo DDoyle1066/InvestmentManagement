@@ -10,4 +10,4 @@ docker-exec:
 	docker exec -it inv-man /bin/bash
 
 docker-run-main:
-	docker exec -t julia src/Main.jl
+	docker exec -t inv-man julia InvestmentManagement/Main.jl
